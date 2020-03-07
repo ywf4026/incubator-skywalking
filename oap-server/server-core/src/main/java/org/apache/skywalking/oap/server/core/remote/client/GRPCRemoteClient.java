@@ -20,25 +20,28 @@ package org.apache.skywalking.oap.server.core.remote.client;
 
 import io.grpc.ManagedChannel;
 import io.grpc.stub.StreamObserver;
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.skywalking.apm.commons.datacarrier.DataCarrier;
-import org.apache.skywalking.apm.commons.datacarrier.buffer.BufferStrategy;
 import org.apache.skywalking.apm.commons.datacarrier.consumer.IConsumer;
-import org.apache.skywalking.oap.server.core.remote.annotation.StreamDataClassGetter;
 import org.apache.skywalking.oap.server.core.remote.data.StreamData;
-import org.apache.skywalking.oap.server.core.remote.grpc.proto.*;
+import org.apache.skywalking.oap.server.core.remote.grpc.proto.Empty;
+import org.apache.skywalking.oap.server.core.remote.grpc.proto.RemoteMessage;
+import org.apache.skywalking.oap.server.core.remote.grpc.proto.RemoteServiceGrpc;
 import org.apache.skywalking.oap.server.library.client.grpc.GRPCClient;
-import org.apache.skywalking.oap.server.library.module.*;
+import org.apache.skywalking.oap.server.library.module.ModuleDefineHolder;
 import org.apache.skywalking.oap.server.telemetry.TelemetryModule;
-import org.apache.skywalking.oap.server.telemetry.api.*;
-import org.slf4j.*;
+import org.apache.skywalking.oap.server.telemetry.api.CounterMetrics;
+import org.apache.skywalking.oap.server.telemetry.api.MetricsCreator;
+import org.apache.skywalking.oap.server.telemetry.api.MetricsTag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * This is a wrapper of the gRPC client for sending message to each other OAP server.
- * It contains a block queue to buffering the message and sending the message by batch.
- *
- * @author peng-yongsheng
+ * This is a wrapper of the gRPC client for sending message to each other OAP server. It contains a block queue to
+ * buffering the message and sending the message by batch.
  */
 public class GRPCRemoteClient implements RemoteClient {
 
@@ -47,31 +50,35 @@ public class GRPCRemoteClient implements RemoteClient {
     private final int channelSize;
     private final int bufferSize;
     private final Address address;
-    private final StreamDataClassGetter streamDataClassGetter;
     private final AtomicInteger concurrentStreamObserverNumber = new AtomicInteger(0);
     private GRPCClient client;
     private DataCarrier<RemoteMessage> carrier;
     private boolean isConnect;
-    private CounterMetric remoteOutCounter;
-    private CounterMetric remoteOutErrorCounter;
+    private CounterMetrics remoteOutCounter;
+    private CounterMetrics remoteOutErrorCounter;
+    private int remoteTimeout;
 
-
-    public GRPCRemoteClient(ModuleDefineHolder moduleDefineHolder, StreamDataClassGetter streamDataClassGetter, Address address, int channelSize,
-        int bufferSize) {
-        this.streamDataClassGetter = streamDataClassGetter;
+    public GRPCRemoteClient(ModuleDefineHolder moduleDefineHolder, Address address, int channelSize, int bufferSize,
+        int remoteTimeout) {
         this.address = address;
         this.channelSize = channelSize;
         this.bufferSize = bufferSize;
+        this.remoteTimeout = remoteTimeout;
 
-        remoteOutCounter = moduleDefineHolder.find(TelemetryModule.NAME).provider().getService(MetricCreator.class)
-            .createCounter("remote_out_count", "The number(client side) of inside remote inside aggregate rpc.",
-                new MetricTag.Keys("dest", "self"), new MetricTag.Values(address.toString(), "N"));
-        remoteOutErrorCounter = moduleDefineHolder.find(TelemetryModule.NAME).provider().getService(MetricCreator.class)
-            .createCounter("remote_out_error_count", "The error number(client side) of inside remote inside aggregate rpc.",
-                new MetricTag.Keys("dest", "self"), new MetricTag.Values(address.toString(), "N"));
+        remoteOutCounter = moduleDefineHolder.find(TelemetryModule.NAME)
+                                             .provider()
+                                             .getService(MetricsCreator.class)
+                                             .createCounter("remote_out_count", "The number(client side) of inside remote inside aggregate rpc.", new MetricsTag.Keys("dest", "self"), new MetricsTag.Values(address
+                                                 .toString(), "N"));
+        remoteOutErrorCounter = moduleDefineHolder.find(TelemetryModule.NAME)
+                                                  .provider()
+                                                  .getService(MetricsCreator.class)
+                                                  .createCounter("remote_out_error_count", "The error number(client side) of inside remote inside aggregate rpc.", new MetricsTag.Keys("dest", "self"), new MetricsTag.Values(address
+                                                      .toString(), "N"));
     }
 
-    @Override public void connect() {
+    @Override
+    public void connect() {
         if (!isConnect) {
             this.getClient().connect();
             this.getDataCarrier().consume(new RemoteMessageConsumer(), 1);
@@ -108,7 +115,6 @@ public class GRPCRemoteClient implements RemoteClient {
             synchronized (GRPCRemoteClient.class) {
                 if (Objects.isNull(this.carrier)) {
                     this.carrier = new DataCarrier<>("GRPCRemoteClient", channelSize, bufferSize);
-                    this.carrier.setBufferStrategy(BufferStrategy.BLOCKING);
                 }
             }
         }
@@ -118,24 +124,25 @@ public class GRPCRemoteClient implements RemoteClient {
     /**
      * Push stream data which need to send to another OAP server.
      *
-     * @param nextWorkerId the id of a worker which will process this stream data.
-     * @param streamData the entity contains the values.
+     * @param nextWorkerName the name of a worker which will process this stream data.
+     * @param streamData     the entity contains the values.
      */
-    @Override public void push(int nextWorkerId, StreamData streamData) {
-        int streamDataId = streamDataClassGetter.findIdByClass(streamData.getClass());
+    @Override
+    public void push(String nextWorkerName, StreamData streamData) {
         RemoteMessage.Builder builder = RemoteMessage.newBuilder();
-        builder.setNextWorkerId(nextWorkerId);
-        builder.setStreamDataId(streamDataId);
+        builder.setNextWorkerName(nextWorkerName);
         builder.setRemoteData(streamData.serialize());
 
         this.getDataCarrier().produce(builder.build());
     }
 
     class RemoteMessageConsumer implements IConsumer<RemoteMessage> {
-        @Override public void init() {
+        @Override
+        public void init() {
         }
 
-        @Override public void consume(List<RemoteMessage> remoteMessages) {
+        @Override
+        public void consume(List<RemoteMessage> remoteMessages) {
             try {
                 StreamObserver<RemoteMessage> streamObserver = createStreamObserver();
                 for (RemoteMessage remoteMessage : remoteMessages) {
@@ -149,18 +156,19 @@ public class GRPCRemoteClient implements RemoteClient {
             }
         }
 
-        @Override public void onError(List<RemoteMessage> remoteMessages, Throwable t) {
+        @Override
+        public void onError(List<RemoteMessage> remoteMessages, Throwable t) {
             logger.error(t.getMessage(), t);
         }
 
-        @Override public void onExit() {
+        @Override
+        public void onExit() {
         }
     }
 
     /**
-     * Create a gRPC stream observer to sending stream data, one stream observer
-     * could send multiple stream data by a single consume.
-     * The max number of concurrency allowed at the same time is 10.
+     * Create a gRPC stream observer to sending stream data, one stream observer could send multiple stream data by a
+     * single consume. The max number of concurrency allowed at the same time is 10.
      *
      * @return stream observer
      */
@@ -183,22 +191,26 @@ public class GRPCRemoteClient implements RemoteClient {
             }
         }
 
-        return getStub().call(new StreamObserver<Empty>() {
-            @Override public void onNext(Empty empty) {
+        return getStub().withDeadlineAfter(remoteTimeout, TimeUnit.SECONDS).call(new StreamObserver<Empty>() {
+            @Override
+            public void onNext(Empty empty) {
             }
 
-            @Override public void onError(Throwable throwable) {
+            @Override
+            public void onError(Throwable throwable) {
                 concurrentStreamObserverNumber.addAndGet(-1);
                 logger.error(throwable.getMessage(), throwable);
             }
 
-            @Override public void onCompleted() {
+            @Override
+            public void onCompleted() {
                 concurrentStreamObserverNumber.addAndGet(-1);
             }
         });
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         if (Objects.nonNull(this.carrier)) {
             this.carrier.shutdownConsumers();
         }
@@ -207,11 +219,13 @@ public class GRPCRemoteClient implements RemoteClient {
         }
     }
 
-    @Override public Address getAddress() {
+    @Override
+    public Address getAddress() {
         return address;
     }
 
-    @Override public int compareTo(RemoteClient o) {
+    @Override
+    public int compareTo(RemoteClient o) {
         return address.compareTo(o.getAddress());
     }
 }

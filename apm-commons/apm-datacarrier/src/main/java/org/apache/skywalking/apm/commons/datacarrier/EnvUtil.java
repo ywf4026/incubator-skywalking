@@ -20,8 +20,6 @@ package org.apache.skywalking.apm.commons.datacarrier;
 
 /**
  * Read value from system env.
- *
- * @author wusheng
  */
 public class EnvUtil {
     public static int getInt(String envName, int defaultValue) {
@@ -42,7 +40,7 @@ public class EnvUtil {
         String envValue = System.getenv(envName);
         if (envValue != null) {
             try {
-                value = Integer.parseInt(envValue);
+                value = Long.parseLong(envValue);
             } catch (NumberFormatException e) {
 
             }

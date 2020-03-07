@@ -18,56 +18,65 @@
 
 package org.apache.skywalking.oap.server.core.source;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.skywalking.oap.server.core.Const;
 
 import static org.apache.skywalking.oap.server.core.source.DefaultScopeDefine.SERVICE_RELATION;
 
-/**
- * @author peng-yongsheng
- */
 @ScopeDeclaration(id = SERVICE_RELATION, name = "ServiceRelation")
+@ScopeDefaultColumn.VirtualColumnDefinition(fieldName = "entityId", columnName = "entity_id", isID = true, type = String.class)
 public class ServiceRelation extends Source {
 
-    @Override public int scope() {
+    @Override
+    public int scope() {
         return DefaultScopeDefine.SERVICE_RELATION;
     }
 
-    @Override public String getEntityId() {
-        return String.valueOf(sourceServiceId) + Const.ID_SPLIT + String.valueOf(destServiceId) + Const.ID_SPLIT + String.valueOf(componentId);
+    @Override
+    public String getEntityId() {
+        return String.valueOf(sourceServiceId) + Const.ID_SPLIT + String.valueOf(destServiceId);
     }
 
-    public static String buildEntityId(int sourceServiceId, int destServiceId, int componentId) {
-        return String.valueOf(sourceServiceId) + Const.ID_SPLIT + String.valueOf(destServiceId) + Const.ID_SPLIT + String.valueOf(componentId);
-    }
-
-    /**
-     * @param entityId
-     * @return 1. sourceServiceId 2. destServiceId 3. componentId
-     */
-    public static Integer[] splitEntityId(String entityId) {
-        String[] parts = entityId.split(Const.ID_SPLIT);
-        if (parts.length != 3) {
-            throw new RuntimeException("Illegal ServiceRelation eneity id");
-        }
-        Integer[] ids = new Integer[3];
-        ids[0] = Integer.parseInt(parts[0]);
-        ids[1] = Integer.parseInt(parts[1]);
-        ids[2] = Integer.parseInt(parts[2]);
-        return ids;
-    }
-
-    @Getter @Setter private int sourceServiceId;
-    @Getter @Setter private String sourceServiceName;
-    @Getter @Setter private String sourceServiceInstanceName;
-    @Getter @Setter private int destServiceId;
-    @Getter @Setter private String destServiceName;
-    @Getter @Setter private String destServiceInstanceName;
-    @Getter @Setter private String endpoint;
-    @Getter @Setter private int componentId;
-    @Getter @Setter private int latency;
-    @Getter @Setter private boolean status;
-    @Getter @Setter private int responseCode;
-    @Getter @Setter private RequestType type;
-    @Getter @Setter private DetectPoint detectPoint;
+    @Getter
+    @Setter
+    private int sourceServiceId;
+    @Getter
+    @Setter
+    @ScopeDefaultColumn.DefinedByField(columnName = "source_name", requireDynamicActive = true)
+    private String sourceServiceName;
+    @Getter
+    @Setter
+    private String sourceServiceInstanceName;
+    @Getter
+    @Setter
+    private int destServiceId;
+    @Getter
+    @Setter
+    @ScopeDefaultColumn.DefinedByField(columnName = "dest_name", requireDynamicActive = true)
+    private String destServiceName;
+    @Getter
+    @Setter
+    private String destServiceInstanceName;
+    @Getter
+    @Setter
+    private String endpoint;
+    @Getter
+    @Setter
+    private int componentId;
+    @Getter
+    @Setter
+    private int latency;
+    @Getter
+    @Setter
+    private boolean status;
+    @Getter
+    @Setter
+    private int responseCode;
+    @Getter
+    @Setter
+    private RequestType type;
+    @Getter
+    @Setter
+    private DetectPoint detectPoint;
 }

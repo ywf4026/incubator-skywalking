@@ -23,8 +23,6 @@ import org.apache.skywalking.apm.plugin.jdbc.trace.ConnectionInfo;
 
 /**
  * {@link MysqlURLParser} parse connection url of mysql.
- *
- * @author zhangxin
  */
 public class MysqlURLParser extends AbstractURLParser {
 
@@ -84,18 +82,20 @@ public class MysqlURLParser extends AbstractURLParser {
             StringBuilder sb = new StringBuilder();
             for (String host : hostSegment) {
                 if (host.split(":").length == 1) {
-                    sb.append(host + ":" + DEFAULT_PORT + ",");
+                    sb.append(host).append(":").append(DEFAULT_PORT).append(",");
                 } else {
-                    sb.append(host + ",");
+                    sb.append(host).append(",");
                 }
             }
-            return new ConnectionInfo(ComponentsDefine.MYSQL_JDBC_DRIVER, DB_TYPE, sb.toString(), fetchDatabaseNameFromURL());
+            return new ConnectionInfo(ComponentsDefine.MYSQL_JDBC_DRIVER, DB_TYPE, sb.substring(0, sb.length() - 1), fetchDatabaseNameFromURL());
         } else {
             String[] hostAndPort = hostSegment[0].split(":");
             if (hostAndPort.length != 1) {
-                return new ConnectionInfo(ComponentsDefine.MYSQL_JDBC_DRIVER, DB_TYPE, hostAndPort[0], Integer.valueOf(hostAndPort[1]), fetchDatabaseNameFromURL(location.endIndex()));
+                return new ConnectionInfo(ComponentsDefine.MYSQL_JDBC_DRIVER, DB_TYPE, hostAndPort[0], Integer.valueOf(hostAndPort[1]), fetchDatabaseNameFromURL(location
+                    .endIndex()));
             } else {
-                return new ConnectionInfo(ComponentsDefine.MYSQL_JDBC_DRIVER, DB_TYPE, hostAndPort[0], DEFAULT_PORT, fetchDatabaseNameFromURL(location.endIndex()));
+                return new ConnectionInfo(ComponentsDefine.MYSQL_JDBC_DRIVER, DB_TYPE, hostAndPort[0], DEFAULT_PORT, fetchDatabaseNameFromURL(location
+                    .endIndex()));
             }
         }
     }

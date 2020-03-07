@@ -18,140 +18,107 @@
 
 package org.apache.skywalking.oap.server.storage.plugin.elasticsearch;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.skywalking.oap.server.library.module.ModuleConfig;
 
-/**
- * @author peng-yongsheng
- */
+@Getter
 public class StorageModuleElasticsearchConfig extends ModuleConfig {
-
-    @Setter @Getter private String nameSpace;
-    @Setter @Getter private String clusterNodes;
-    private int indexShardsNumber;
-    private int indexReplicasNumber;
-    private boolean highPerformanceMode;
-    private int traceDataTTL = 90;
-    private int minuteMetricDataTTL = 90;
-    private int hourMetricDataTTL = 36;
-    private int dayMetricDataTTL = 45;
-    private int monthMetricDataTTL = 18;
+    @Setter
+    private String nameSpace;
+    @Setter
+    private String clusterNodes;
+    @Getter
+    @Setter
+    String protocol = "http";
+    @Setter
+    private int indexShardsNumber = 2;
+    @Setter
+    private int indexReplicasNumber = 0;
+    @Setter
+    private int indexRefreshInterval = 2;
+    @Setter
     private int bulkActions = 2000;
-    private int bulkSize = 20;
+    @Setter
     private int flushInterval = 10;
+    @Setter
     private int concurrentRequests = 2;
+    @Setter
+    private int syncBulkActions = 3;
+    @Setter
     private String user;
+    @Setter
     private String password;
+    @Getter
+    @Setter
+    String trustStorePath;
+    @Getter
+    @Setter
+    String trustStorePass;
+    /**
+     * If this is ON, downsampling indexes(hour and day precisions) merged into minute precision. In this case, only
+     * {@link #minuteMetricsDataTTL} works for minute, hour and day.
+     *
+     * @since 7.0.0 This is an enhancement. Reduce 50% of index number(remove day/hour index requirements) but keep the
+     * performance nearly same as before. Only one side-effect for 6.x storage is just day/hour indexes remain, users
+     * need to remove them manually.
+     */
+    @Getter
+    private boolean enablePackedDownsampling = true;
+    /**
+     * Since 6.4.0, the index of metrics and traces data in minute/hour/month precision are organized in days. ES
+     * storage creates new indexes in every day.
+     *
+     * @since 7.0.0 dayStep represents how many days a single one index represents. Default is 1, meaning no difference
+     * with previous versions. But if there isn't much traffic for single one day, user could set the step larger to
+     * reduce the number of indexes, and keep the TTL longer.
+     *
+     * Same as {@link #enablePackedDownsampling} this config doesn't affects month level data. Because usually, no one
+     * keeps the observability data in several months.
+     *
+     */
+    @Getter
+    private int dayStep = 1;
+    @Setter
+    private int resultWindowMaxSize = 10000;
+    @Setter
+    private int metadataQueryMaxSize = 5000;
+    @Setter
+    private int segmentQueryMaxSize = 200;
+    @Setter
+    private int profileTaskQueryMaxSize = 200;
+    @Setter
+    private int recordDataTTL = 7;
+    @Setter
+    private int minuteMetricsDataTTL = 2;
+    @Setter
+    private int hourMetricsDataTTL = 2;
+    @Setter
+    private int dayMetricsDataTTL = 2;
+    private int otherMetricsDataTTL = 0;
+    @Setter
+    private int monthMetricsDataTTL = 18;
+    @Setter
+    private String advanced;
 
-    public String getUser() {
-        return user;
+    public int getMinuteMetricsDataTTL() {
+        if (otherMetricsDataTTL > 0) {
+            return otherMetricsDataTTL;
+        }
+        return minuteMetricsDataTTL;
     }
 
-    public void setUser(String user) {
-        this.user = user;
+    public int getHourMetricsDataTTL() {
+        if (otherMetricsDataTTL > 0) {
+            return otherMetricsDataTTL;
+        }
+        return hourMetricsDataTTL;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    int getIndexShardsNumber() {
-        return indexShardsNumber;
-    }
-
-    void setIndexShardsNumber(int indexShardsNumber) {
-        this.indexShardsNumber = indexShardsNumber;
-    }
-
-    int getIndexReplicasNumber() {
-        return indexReplicasNumber;
-    }
-
-    void setIndexReplicasNumber(int indexReplicasNumber) {
-        this.indexReplicasNumber = indexReplicasNumber;
-    }
-
-    boolean isHighPerformanceMode() {
-        return highPerformanceMode;
-    }
-
-    void setHighPerformanceMode(boolean highPerformanceMode) {
-        this.highPerformanceMode = highPerformanceMode;
-    }
-
-    public int getTraceDataTTL() {
-        return traceDataTTL;
-    }
-
-    void setTraceDataTTL(int traceDataTTL) {
-        this.traceDataTTL = traceDataTTL == 0 ? 90 : traceDataTTL;
-    }
-
-    public int getMinuteMetricDataTTL() {
-        return minuteMetricDataTTL;
-    }
-
-    void setMinuteMetricDataTTL(int minuteMetricDataTTL) {
-        this.minuteMetricDataTTL = minuteMetricDataTTL == 0 ? 90 : minuteMetricDataTTL;
-    }
-
-    public int getHourMetricDataTTL() {
-        return hourMetricDataTTL;
-    }
-
-    void setHourMetricDataTTL(int hourMetricDataTTL) {
-        this.hourMetricDataTTL = hourMetricDataTTL == 0 ? 36 : hourMetricDataTTL;
-    }
-
-    public int getDayMetricDataTTL() {
-        return dayMetricDataTTL;
-    }
-
-    void setDayMetricDataTTL(int dayMetricDataTTL) {
-        this.dayMetricDataTTL = dayMetricDataTTL == 0 ? 45 : dayMetricDataTTL;
-    }
-
-    public int getMonthMetricDataTTL() {
-        return monthMetricDataTTL;
-    }
-
-    void setMonthMetricDataTTL(int monthMetricDataTTL) {
-        this.monthMetricDataTTL = monthMetricDataTTL == 0 ? 18 : monthMetricDataTTL;
-    }
-
-    public int getBulkActions() {
-        return bulkActions;
-    }
-
-    public void setBulkActions(int bulkActions) {
-        this.bulkActions = bulkActions == 0 ? 2000 : bulkActions;
-    }
-
-    public int getBulkSize() {
-        return bulkSize;
-    }
-
-    public void setBulkSize(int bulkSize) {
-        this.bulkSize = bulkSize == 0 ? 20 : bulkSize;
-    }
-
-    public int getFlushInterval() {
-        return flushInterval;
-    }
-
-    public void setFlushInterval(int flushInterval) {
-        this.flushInterval = flushInterval == 0 ? 10 : flushInterval;
-    }
-
-    public int getConcurrentRequests() {
-        return concurrentRequests;
-    }
-
-    public void setConcurrentRequests(int concurrentRequests) {
-        this.concurrentRequests = concurrentRequests == 0 ? 2 : concurrentRequests;
+    public int getDayMetricsDataTTL() {
+        if (otherMetricsDataTTL > 0) {
+            return otherMetricsDataTTL;
+        }
+        return dayMetricsDataTTL;
     }
 }

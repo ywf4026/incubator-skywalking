@@ -21,9 +21,7 @@ package org.apache.skywalking.oap.server.receiver.envoy;
 import org.apache.skywalking.oap.server.library.module.ModuleDefine;
 
 /**
- * Envoy metric receiver module
- *
- * @author wusheng
+ * Envoy metrics receiver module
  */
 public class EnvoyMetricReceiverModule extends ModuleDefine {
     public static final String NAME = "envoy-metric";
@@ -32,7 +30,8 @@ public class EnvoyMetricReceiverModule extends ModuleDefine {
         super(NAME);
     }
 
-    @Override public Class[] services() {
+    @Override
+    public Class[] services() {
         return new Class[0];
     }
 }

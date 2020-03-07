@@ -19,11 +19,8 @@
 package org.apache.skywalking.oap.server.receiver.trace.provider.parser.standardization;
 
 import org.apache.skywalking.apm.network.language.agent.UpstreamSegment;
-import org.apache.skywalking.oap.server.core.analysis.data.*;
+import org.apache.skywalking.oap.server.core.analysis.data.QueueData;
 
-/**
- * @author peng-yongsheng
- */
 public class SegmentStandardization implements QueueData {
 
     private final String id;
@@ -36,14 +33,21 @@ public class SegmentStandardization implements QueueData {
         return id;
     }
 
-    private EndOfBatchContext context;
+    private boolean endOfBatch = false;
 
-    @Override public EndOfBatchContext getEndOfBatchContext() {
-        return this.context;
+    @Override
+    public void resetEndOfBatch() {
+        this.endOfBatch = false;
     }
 
-    @Override public void setEndOfBatchContext(EndOfBatchContext context) {
-        this.context = context;
+    @Override
+    public void asEndOfBatch() {
+        this.endOfBatch = true;
+    }
+
+    @Override
+    public boolean isEndOfBatch() {
+        return this.endOfBatch;
     }
 
     private UpstreamSegment upstreamSegment;

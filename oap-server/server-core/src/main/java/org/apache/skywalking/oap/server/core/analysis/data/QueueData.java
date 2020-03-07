@@ -18,12 +18,11 @@
 
 package org.apache.skywalking.oap.server.core.analysis.data;
 
-/**
- * @author peng-yongsheng
- */
 public interface QueueData {
 
-    EndOfBatchContext getEndOfBatchContext();
+    void resetEndOfBatch();
 
-    void setEndOfBatchContext(EndOfBatchContext context);
+    void asEndOfBatch();
+
+    boolean isEndOfBatch();
 }

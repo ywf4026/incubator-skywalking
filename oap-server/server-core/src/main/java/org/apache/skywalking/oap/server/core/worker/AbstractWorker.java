@@ -19,17 +19,25 @@
 package org.apache.skywalking.oap.server.core.worker;
 
 import lombok.Getter;
+import org.apache.skywalking.oap.server.library.module.ModuleDefineHolder;
 
 /**
- * @author peng-yongsheng
+ * Abstract worker definition. Provide the {@link ModuleDefineHolder} to make sure the worker could find and access
+ * services in different modules. Also, {@link #in(Object)} is provided as the primary entrance of every worker.
+ *
+ * @param <INPUT> the datatype this worker implementation processes.
  */
 public abstract class AbstractWorker<INPUT> {
 
-    @Getter private final int workerId;
+    @Getter
+    private final ModuleDefineHolder moduleDefineHolder;
 
-    public AbstractWorker(int workerId) {
-        this.workerId = workerId;
+    public AbstractWorker(ModuleDefineHolder moduleDefineHolder) {
+        this.moduleDefineHolder = moduleDefineHolder;
     }
 
+    /**
+     * Main entrance of this worker.
+     */
     public abstract void in(INPUT input);
 }

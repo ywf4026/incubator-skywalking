@@ -18,14 +18,20 @@
 
 package org.apache.skywalking.oap.server.core.query.entity;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * @author peng-yongsheng
- */
 @Getter
 @Setter
 public class KeyValue {
     private String key;
     private String value;
+
+    public KeyValue(String key, String value) {
+        this.key = key;
+        this.value = value;
+    }
+
+    public KeyValue() {
+    }
 }

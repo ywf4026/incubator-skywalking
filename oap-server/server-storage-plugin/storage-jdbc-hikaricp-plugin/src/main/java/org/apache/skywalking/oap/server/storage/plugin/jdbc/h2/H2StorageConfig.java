@@ -22,9 +22,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.skywalking.oap.server.library.module.ModuleConfig;
 
-/**
- * @author wusheng
- */
 @Setter
 @Getter
 public class H2StorageConfig extends ModuleConfig {
@@ -32,4 +29,5 @@ public class H2StorageConfig extends ModuleConfig {
     private String url = "jdbc:h2:mem:collector";
     private String user = "";
     private String password = "";
+    private int metadataQueryMaxSize = 5000;
 }

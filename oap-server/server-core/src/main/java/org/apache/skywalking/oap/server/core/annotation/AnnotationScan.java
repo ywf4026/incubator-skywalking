@@ -22,10 +22,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.util.*;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
- * @author peng-yongsheng
+ * Scan the annotation, and notify the listener(s)
  */
 public class AnnotationScan {
 
@@ -35,11 +37,19 @@ public class AnnotationScan {
         this.listeners = new LinkedList<>();
     }
 
+    /**
+     * Register the callback listener
+     *
+     * @param listener to be called after class found w/ annotation
+     */
     public void registerListener(AnnotationListener listener) {
         listeners.add(new AnnotationListenerCache(listener));
     }
 
-    public void scan(Runnable callBack) throws IOException {
+    /**
+     * Begin to scan classes.
+     */
+    public void scan() throws IOException {
         ClassPath classpath = ClassPath.from(this.getClass().getClassLoader());
         ImmutableSet<ClassPath.ClassInfo> classes = classpath.getTopLevelClassesRecursive("org.apache.skywalking");
         for (ClassPath.ClassInfo classInfo : classes) {
@@ -52,16 +62,10 @@ public class AnnotationScan {
             }
         }
 
-        listeners.forEach(listener ->
-            listener.complete()
-        );
-
-        if (callBack != null) {
-            callBack.run();
-        }
+        listeners.forEach(AnnotationListenerCache::complete);
     }
 
-    public class AnnotationListenerCache {
+    private class AnnotationListenerCache {
         private AnnotationListener listener;
         private List<Class<?>> matchedClass;
 

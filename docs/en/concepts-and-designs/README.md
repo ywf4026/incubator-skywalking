@@ -18,6 +18,8 @@ SkyWalking already support.
 - Backend
   - [Overview](backend-overview.md). Provides a high level introduction about the OAP backend.
   - [Observability Analysis Language](oal.md). Introduces the core languages, which is designed for aggregation behaviour definition.
-  - [Query in OAP](../protocols/README.md#query-protocol). A set of query protocol provided, based on the Observability Analysis Language metric definition. 
+  - [Query in OAP](../protocols/README.md#query-protocol). A set of query protocol provided, based on the Observability Analysis Language metrics definition. 
 - UI
   - [Overview](ui-overview.md). A simple brief about SkyWalking UI.
+- CLI
+  - [SkyWalking CLI](https://github.com/apache/skywalking-cli). A command line interface for SkyWalking.

@@ -19,14 +19,13 @@
 package org.apache.skywalking.oap.server.core.analysis.manual.database;
 
 import org.apache.skywalking.oap.server.core.analysis.SourceDispatcher;
-import org.apache.skywalking.oap.server.core.analysis.worker.TopNProcess;
+import org.apache.skywalking.oap.server.core.analysis.worker.TopNStreamProcessor;
 import org.apache.skywalking.oap.server.core.source.DatabaseSlowStatement;
 
-/**
- * @author wusheng
- */
 public class DatabaseStatementDispatcher implements SourceDispatcher<DatabaseSlowStatement> {
-    @Override public void dispatch(DatabaseSlowStatement source) {
+
+    @Override
+    public void dispatch(DatabaseSlowStatement source) {
         TopNDatabaseStatement statement = new TopNDatabaseStatement();
         statement.setId(source.getId());
         statement.setServiceId(source.getDatabaseServiceId());
@@ -35,6 +34,6 @@ public class DatabaseStatementDispatcher implements SourceDispatcher<DatabaseSlo
         statement.setTimeBucket(source.getTimeBucket());
         statement.setTraceId(source.getTraceId());
 
-        TopNProcess.INSTANCE.in(statement);
+        TopNStreamProcessor.getInstance().in(statement);
     }
 }

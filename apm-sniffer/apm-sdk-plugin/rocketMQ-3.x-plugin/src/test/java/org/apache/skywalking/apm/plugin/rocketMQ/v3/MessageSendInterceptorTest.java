@@ -16,7 +16,6 @@
  *
  */
 
-
 package org.apache.skywalking.apm.plugin.rocketMQ.v3;
 
 import java.util.List;
@@ -46,7 +45,6 @@ import org.apache.skywalking.apm.network.trace.component.ComponentsDefine;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.when;
 
@@ -81,17 +79,35 @@ public class MessageSendInterceptorTest {
     public void setUp() {
         messageSendInterceptor = new MessageSendInterceptor();
         enhancedInstance = new EnhancedInstance() {
-            @Override public Object getSkyWalkingDynamicField() {
+            @Override
+            public Object getSkyWalkingDynamicField() {
                 return "127.0.0.1:6543";
             }
 
-            @Override public void setSkyWalkingDynamicField(Object value) {
+            @Override
+            public void setSkyWalkingDynamicField(Object value) {
 
             }
         };
 
-        arguments = new Object[] {"127.0.0.1", "test", message, messageRequestHeader, null, CommunicationMode.ASYNC, callBack};
-        argumentsWithoutCallback = new Object[] {"127.0.0.1", "test", message, messageRequestHeader, null, CommunicationMode.ASYNC, null};
+        arguments = new Object[] {
+            "127.0.0.1",
+            "test",
+            message,
+            messageRequestHeader,
+            null,
+            CommunicationMode.ASYNC,
+            callBack
+        };
+        argumentsWithoutCallback = new Object[] {
+            "127.0.0.1",
+            "test",
+            message,
+            messageRequestHeader,
+            null,
+            CommunicationMode.ASYNC,
+            null
+        };
         when(messageRequestHeader.getProperties()).thenReturn("");
         when(message.getTags()).thenReturn("TagA");
     }
@@ -111,8 +127,8 @@ public class MessageSendInterceptorTest {
         SpanAssert.assertLayer(mqSpan, SpanLayer.MQ);
         SpanAssert.assertComponent(mqSpan, ComponentsDefine.ROCKET_MQ_PRODUCER);
         SpanAssert.assertTag(mqSpan, 0, "127.0.0.1");
-        verify(messageRequestHeader, times(1)).setProperties(anyString());
-        verify(callBack, times(1)).setSkyWalkingDynamicField(Matchers.any());
+        verify(messageRequestHeader).setProperties(anyString());
+        verify(callBack).setSkyWalkingDynamicField(Matchers.any());
     }
 
     @Test
@@ -130,7 +146,7 @@ public class MessageSendInterceptorTest {
         SpanAssert.assertLayer(mqSpan, SpanLayer.MQ);
         SpanAssert.assertComponent(mqSpan, ComponentsDefine.ROCKET_MQ_PRODUCER);
         SpanAssert.assertTag(mqSpan, 0, "127.0.0.1");
-        verify(messageRequestHeader, times(1)).setProperties(anyString());
+        verify(messageRequestHeader).setProperties(anyString());
     }
 
 }

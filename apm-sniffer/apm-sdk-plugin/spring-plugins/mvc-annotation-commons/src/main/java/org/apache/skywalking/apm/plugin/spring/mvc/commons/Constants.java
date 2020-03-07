@@ -20,8 +20,6 @@ package org.apache.skywalking.apm.plugin.spring.mvc.commons;
 
 /**
  * Interceptor class name constant variables
- *
- * @author zhangxin
  */
 public class Constants {
     public static final String GET_BEAN_INTERCEPTOR = "org.apache.skywalking.apm.plugin.spring.mvc.commons.interceptor.GetBeanInterceptor";
@@ -39,4 +37,6 @@ public class Constants {
     public static final String FORWARD_REQUEST_FLAG = "SW_FORWARD_REQUEST_FLAG";
 
     public static final String WEBFLUX_REQUEST_KEY = "SW_WEBFLUX_REQUEST_KEY";
+
+    public static final String CONTROLLER_METHOD_STACK_DEPTH = "SW_CONTROLLER_METHOD_STACK_DEPTH";
 }

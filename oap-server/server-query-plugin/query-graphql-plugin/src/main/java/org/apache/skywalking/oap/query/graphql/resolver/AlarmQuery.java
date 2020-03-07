@@ -20,15 +20,16 @@ package org.apache.skywalking.oap.query.graphql.resolver;
 
 import com.coxautodev.graphql.tools.GraphQLQueryResolver;
 import java.io.IOException;
-import org.apache.skywalking.oap.query.graphql.type.*;
+import org.apache.skywalking.oap.query.graphql.type.Duration;
 import org.apache.skywalking.oap.server.core.CoreModule;
-import org.apache.skywalking.oap.server.core.query.*;
-import org.apache.skywalking.oap.server.core.query.entity.*;
+import org.apache.skywalking.oap.server.core.query.AlarmQueryService;
+import org.apache.skywalking.oap.server.core.query.DurationUtils;
+import org.apache.skywalking.oap.server.core.query.entity.AlarmTrend;
+import org.apache.skywalking.oap.server.core.query.entity.Alarms;
+import org.apache.skywalking.oap.server.core.query.entity.Pagination;
+import org.apache.skywalking.oap.server.core.query.entity.Scope;
 import org.apache.skywalking.oap.server.library.module.ModuleManager;
 
-/**
- * @author peng-yongsheng
- */
 public class AlarmQuery implements GraphQLQueryResolver {
 
     private final ModuleManager moduleManager;
@@ -54,6 +55,11 @@ public class AlarmQuery implements GraphQLQueryResolver {
         long startTimeBucket = DurationUtils.INSTANCE.startTimeDurationToSecondTimeBucket(duration.getStep(), duration.getStart());
         long endTimeBucket = DurationUtils.INSTANCE.endTimeDurationToSecondTimeBucket(duration.getStep(), duration.getEnd());
 
-        return getQueryService().getAlarm(scope.getScopeId(), keyword, paging, startTimeBucket, endTimeBucket);
+        Integer scopeId = null;
+        if (scope != null) {
+            scopeId = scope.getScopeId();
+        }
+
+        return getQueryService().getAlarm(scopeId, keyword, paging, startTimeBucket, endTimeBucket);
     }
 }

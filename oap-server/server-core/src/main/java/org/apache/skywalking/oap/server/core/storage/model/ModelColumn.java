@@ -20,18 +20,17 @@ package org.apache.skywalking.oap.server.core.storage.model;
 
 import lombok.Getter;
 
-/**
- * @author peng-yongsheng
- */
 @Getter
 public class ModelColumn {
     private final ColumnName columnName;
     private final Class<?> type;
     private final boolean matchQuery;
+    private final boolean content;
 
-    public ModelColumn(ColumnName columnName, Class<?> type, boolean matchQuery) {
+    public ModelColumn(ColumnName columnName, Class<?> type, boolean matchQuery, boolean content) {
         this.columnName = columnName;
         this.type = type;
         this.matchQuery = matchQuery;
+        this.content = content;
     }
 }

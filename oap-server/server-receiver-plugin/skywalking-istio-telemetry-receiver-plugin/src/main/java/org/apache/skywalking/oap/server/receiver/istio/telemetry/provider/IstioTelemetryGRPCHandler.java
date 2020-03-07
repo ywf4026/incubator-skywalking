@@ -21,23 +21,28 @@ package org.apache.skywalking.oap.server.receiver.istio.telemetry.provider;
 import com.google.common.base.Joiner;
 import com.google.protobuf.Timestamp;
 import io.grpc.stub.StreamObserver;
-import io.istio.*;
+import io.istio.HandleMetricServiceGrpc;
+import io.istio.IstioMetricProto;
 import io.istio.api.mixer.adapter.model.v1beta1.ReportProto;
 import io.istio.api.policy.v1beta1.TypeProto;
-import java.time.*;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 import org.apache.skywalking.aop.server.receiver.mesh.TelemetryDataDispatcher;
 import org.apache.skywalking.apm.network.common.DetectPoint;
-import org.apache.skywalking.apm.network.servicemesh.*;
+import org.apache.skywalking.apm.network.servicemesh.Protocol;
+import org.apache.skywalking.apm.network.servicemesh.ServiceMeshMetric;
 import org.apache.skywalking.oap.server.library.module.ModuleManager;
 import org.apache.skywalking.oap.server.telemetry.TelemetryModule;
-import org.apache.skywalking.oap.server.telemetry.api.*;
-import org.slf4j.*;
+import org.apache.skywalking.oap.server.telemetry.api.CounterMetrics;
+import org.apache.skywalking.oap.server.telemetry.api.HistogramMetrics;
+import org.apache.skywalking.oap.server.telemetry.api.MetricsCreator;
+import org.apache.skywalking.oap.server.telemetry.api.MetricsTag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handle istio telemetry data.
- *
- * @author gaohongtao
  */
 public class IstioTelemetryGRPCHandler extends HandleMetricServiceGrpc.HandleMetricServiceImplBase {
 
@@ -45,25 +50,26 @@ public class IstioTelemetryGRPCHandler extends HandleMetricServiceGrpc.HandleMet
 
     private static final Joiner JOINER = Joiner.on(".");
 
-    private CounterMetric counter;
-    private HistogramMetric histogram;
+    private CounterMetrics counter;
+    private HistogramMetrics histogram;
 
     public IstioTelemetryGRPCHandler(ModuleManager moduleManager) {
-        MetricCreator metricCreator = moduleManager.find(TelemetryModule.NAME).provider().getService(MetricCreator.class);
-        counter = metricCreator.createCounter("istio_mesh_grpc_in_count", "The count of istio service mesh telemetry",
-            MetricTag.EMPTY_KEY, MetricTag.EMPTY_VALUE);
-        histogram = metricCreator.createHistogramMetric("istio_mesh_grpc_in_latency", "The process latency of istio service mesh telemetry",
-            MetricTag.EMPTY_KEY, MetricTag.EMPTY_VALUE);
+        MetricsCreator metricsCreator = moduleManager.find(TelemetryModule.NAME)
+                                                     .provider()
+                                                     .getService(MetricsCreator.class);
+        counter = metricsCreator.createCounter("istio_mesh_grpc_in_count", "The count of istio service mesh telemetry", MetricsTag.EMPTY_KEY, MetricsTag.EMPTY_VALUE);
+        histogram = metricsCreator.createHistogramMetric("istio_mesh_grpc_in_latency", "The process latency of istio service mesh telemetry", MetricsTag.EMPTY_KEY, MetricsTag.EMPTY_VALUE);
     }
 
-    @Override public void handleMetric(IstioMetricProto.HandleMetricRequest request,
+    @Override
+    public void handleMetric(IstioMetricProto.HandleMetricRequest request,
         StreamObserver<ReportProto.ReportResult> responseObserver) {
         if (logger.isDebugEnabled()) {
             logger.debug("Received msg {}", request);
         }
         for (IstioMetricProto.InstanceMsg i : request.getInstancesList()) {
             counter.inc();
-            HistogramMetric.Timer timer = histogram.createTimer();
+            HistogramMetrics.Timer timer = histogram.createTimer();
 
             try {
                 String requestMethod = string(i, "requestMethod");
@@ -76,7 +82,8 @@ public class IstioTelemetryGRPCHandler extends HandleMetricServiceGrpc.HandleMet
                 String endpoint;
                 boolean status = true;
                 Protocol netProtocol;
-                if (protocol.equals("http") || protocol.equals("https") || requestScheme.equals("http") || requestScheme.equals("https")) {
+                if (protocol.equals("http") || protocol.equals("https") || requestScheme.equals("http") || requestScheme
+                    .equals("https")) {
                     endpoint = requestScheme + "/" + requestMethod + "/" + requestPath;
                     status = responseCode >= 200 && responseCode < 400;
                     netProtocol = Protocol.HTTP;
@@ -110,14 +117,23 @@ public class IstioTelemetryGRPCHandler extends HandleMetricServiceGrpc.HandleMet
                     destServiceName = string(i, "destinationService");
                 }
 
-                ServiceMeshMetric metric = ServiceMeshMetric.newBuilder().setStartTime(requestTime.toEpochMilli())
-                    .setEndTime(responseTime.toEpochMilli()).setSourceServiceName(sourceServiceName)
-                    .setSourceServiceInstance(string(i, "sourceUID")).setDestServiceName(destServiceName)
-                    .setDestServiceInstance(string(i, "destinationUID")).setEndpoint(endpoint).setLatency(latency)
-                    .setResponseCode(Math.toIntExact(responseCode)).setStatus(status).setProtocol(netProtocol).setDetectPoint(detectPoint).build();
-                logger.debug("Transformed metric {}", metric);
+                ServiceMeshMetric metrics = ServiceMeshMetric.newBuilder()
+                                                             .setStartTime(requestTime.toEpochMilli())
+                                                             .setEndTime(responseTime.toEpochMilli())
+                                                             .setSourceServiceName(sourceServiceName)
+                                                             .setSourceServiceInstance(string(i, "sourceUID"))
+                                                             .setDestServiceName(destServiceName)
+                                                             .setDestServiceInstance(string(i, "destinationUID"))
+                                                             .setEndpoint(endpoint)
+                                                             .setLatency(latency)
+                                                             .setResponseCode(Math.toIntExact(responseCode))
+                                                             .setStatus(status)
+                                                             .setProtocol(netProtocol)
+                                                             .setDetectPoint(detectPoint)
+                                                             .build();
+                logger.debug("Transformed metrics {}", metrics);
 
-                TelemetryDataDispatcher.preProcess(metric);
+                TelemetryDataDispatcher.preProcess(metrics);
             } finally {
                 timer.finish();
             }

@@ -31,9 +31,6 @@ import org.apache.skywalking.oap.server.library.util.BooleanUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author wusheng
- */
 public class H2ServiceInventoryCacheDAO extends H2SQLExecutor implements IServiceInventoryCacheDAO {
     private static final Logger logger = LoggerFactory.getLogger(H2ServiceInventoryCacheDAO.class);
     private JDBCHikariCPClient h2Client;
@@ -42,39 +39,43 @@ public class H2ServiceInventoryCacheDAO extends H2SQLExecutor implements IServic
         this.h2Client = h2Client;
     }
 
-    @Override public int getServiceId(String serviceName) {
+    @Override
+    public int getServiceId(String serviceName) {
         String id = ServiceInventory.buildId(serviceName);
-        return getEntityIDByID(h2Client, ServiceInventory.SEQUENCE, ServiceInventory.MODEL_NAME, id);
+        return getEntityIDByID(h2Client, ServiceInventory.SEQUENCE, ServiceInventory.INDEX_NAME, id);
     }
 
-    @Override public int getServiceId(int addressId) {
+    @Override
+    public int getServiceId(int addressId) {
         String id = ServiceInventory.buildId(addressId);
-        return getEntityIDByID(h2Client, ServiceInventory.SEQUENCE, ServiceInventory.MODEL_NAME, id);
+        return getEntityIDByID(h2Client, ServiceInventory.SEQUENCE, ServiceInventory.INDEX_NAME, id);
     }
 
-    @Override public ServiceInventory get(int serviceId) {
+    @Override
+    public ServiceInventory get(int serviceId) {
         try {
-            return (ServiceInventory)getByColumn(h2Client, ServiceInventory.MODEL_NAME, ServiceInventory.SEQUENCE, serviceId, new ServiceInventory.Builder());
+            return (ServiceInventory) getByColumn(h2Client, ServiceInventory.INDEX_NAME, ServiceInventory.SEQUENCE, serviceId, new ServiceInventory.Builder());
         } catch (IOException e) {
             logger.error(e.getMessage(), e);
             return null;
         }
     }
 
-    @Override public List<ServiceInventory> loadLastMappingUpdate() {
+    @Override
+    public List<ServiceInventory> loadLastUpdate(long lastUpdateTime) {
         List<ServiceInventory> serviceInventories = new ArrayList<>();
 
         try {
             StringBuilder sql = new StringBuilder("select * from ");
-            sql.append(ServiceInventory.MODEL_NAME);
+            sql.append(ServiceInventory.INDEX_NAME);
             sql.append(" where ").append(ServiceInventory.IS_ADDRESS).append("=? ");
-            sql.append(" and ").append(ServiceInventory.MAPPING_LAST_UPDATE_TIME).append(">?");
+            sql.append(" and ").append(ServiceInventory.LAST_UPDATE_TIME).append(">?");
 
             try (Connection connection = h2Client.getConnection()) {
-                try (ResultSet resultSet = h2Client.executeQuery(connection, sql.toString(), BooleanUtils.TRUE, System.currentTimeMillis() - 30 * 60 * 1000)) {
+                try (ResultSet resultSet = h2Client.executeQuery(connection, sql.toString(), BooleanUtils.TRUE, lastUpdateTime)) {
                     ServiceInventory serviceInventory;
                     do {
-                        serviceInventory = (ServiceInventory)toStorageData(resultSet, ServiceInventory.MODEL_NAME, new ServiceInventory.Builder());
+                        serviceInventory = (ServiceInventory) toStorageData(resultSet, ServiceInventory.INDEX_NAME, new ServiceInventory.Builder());
                         if (serviceInventory != null) {
                             serviceInventories.add(serviceInventory);
                         }

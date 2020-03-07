@@ -19,19 +19,26 @@
 package org.apache.skywalking.oap.server.storage.plugin.jdbc.h2.dao;
 
 import com.google.common.base.Strings;
-import java.io.IOException;
-import java.sql.*;
-import java.util.*;
 import org.apache.skywalking.oap.server.core.analysis.manual.segment.SegmentRecord;
-import org.apache.skywalking.oap.server.core.query.entity.*;
+import org.apache.skywalking.oap.server.core.query.entity.BasicTrace;
+import org.apache.skywalking.oap.server.core.query.entity.QueryOrder;
+import org.apache.skywalking.oap.server.core.query.entity.Span;
+import org.apache.skywalking.oap.server.core.query.entity.TraceBrief;
+import org.apache.skywalking.oap.server.core.query.entity.TraceState;
 import org.apache.skywalking.oap.server.core.storage.query.ITraceQueryDAO;
 import org.apache.skywalking.oap.server.library.client.jdbc.hikaricp.JDBCHikariCPClient;
 import org.apache.skywalking.oap.server.library.util.BooleanUtils;
 import org.elasticsearch.search.sort.SortOrder;
 
-/**
- * @author wusheng
- */
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+
 public class H2TraceQueryDAO implements ITraceQueryDAO {
     private JDBCHikariCPClient h2Client;
 
@@ -103,7 +110,8 @@ public class H2TraceQueryDAO implements ITraceQueryDAO {
         TraceBrief traceBrief = new TraceBrief();
         try (Connection connection = h2Client.getConnection()) {
 
-            try (ResultSet resultSet = h2Client.executeQuery(connection, "select count(1) total from (select 1 " + sql.toString() + " )", parameters.toArray(new Object[0]))) {
+            try (ResultSet resultSet = h2Client.executeQuery(connection, buildCountStatement(sql.toString()), parameters
+                .toArray(new Object[0]))) {
                 while (resultSet.next()) {
                     traceBrief.setTotal(resultSet.getInt("total"));
                 }
@@ -132,12 +140,17 @@ public class H2TraceQueryDAO implements ITraceQueryDAO {
         return traceBrief;
     }
 
+    protected String buildCountStatement(String sql) {
+        return "select count(1) total from (select 1 " + sql + " )";
+    }
+
     protected void buildLimit(StringBuilder sql, int from, int limit) {
         sql.append(" LIMIT ").append(limit);
         sql.append(" OFFSET ").append(from);
     }
 
-    @Override public List<SegmentRecord> queryByTraceId(String traceId) throws IOException {
+    @Override
+    public List<SegmentRecord> queryByTraceId(String traceId) throws IOException {
         List<SegmentRecord> segmentRecords = new ArrayList<>();
         try (Connection connection = h2Client.getConnection()) {
 
@@ -166,7 +179,8 @@ public class H2TraceQueryDAO implements ITraceQueryDAO {
         return segmentRecords;
     }
 
-    protected JDBCHikariCPClient getClient() {
-        return h2Client;
+    @Override
+    public List<Span> doFlexibleTraceQuery(String traceId) {
+        return Collections.emptyList();
     }
 }

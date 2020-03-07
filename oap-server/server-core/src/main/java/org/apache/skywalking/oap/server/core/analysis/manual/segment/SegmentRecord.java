@@ -18,22 +18,22 @@
 
 package org.apache.skywalking.oap.server.core.analysis.manual.segment;
 
-import java.util.*;
-import lombok.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.skywalking.apm.util.StringUtil;
 import org.apache.skywalking.oap.server.core.Const;
+import org.apache.skywalking.oap.server.core.analysis.Stream;
 import org.apache.skywalking.oap.server.core.analysis.record.Record;
-import org.apache.skywalking.oap.server.core.analysis.record.annotation.RecordType;
+import org.apache.skywalking.oap.server.core.analysis.worker.RecordStreamProcessor;
 import org.apache.skywalking.oap.server.core.source.DefaultScopeDefine;
 import org.apache.skywalking.oap.server.core.storage.StorageBuilder;
-import org.apache.skywalking.oap.server.core.storage.annotation.*;
+import org.apache.skywalking.oap.server.core.storage.annotation.Column;
 import org.apache.skywalking.oap.server.library.util.CollectionUtils;
 
-/**
- * @author peng-yongsheng
- */
-@RecordType
-@StorageEntity(name = SegmentRecord.INDEX_NAME, builder = SegmentRecord.Builder.class, sourceScopeId = DefaultScopeDefine.SEGMENT)
+@Stream(name = SegmentRecord.INDEX_NAME, scopeId = DefaultScopeDefine.SEGMENT, builder = SegmentRecord.Builder.class, processor = RecordStreamProcessor.class)
 public class SegmentRecord extends Record {
 
     public static final String INDEX_NAME = "segment";
@@ -50,26 +50,64 @@ public class SegmentRecord extends Record {
     public static final String DATA_BINARY = "data_binary";
     public static final String VERSION = "version";
 
-    @Setter @Getter @Column(columnName = SEGMENT_ID) @IDColumn private String segmentId;
-    @Setter @Getter @Column(columnName = TRACE_ID) @IDColumn private String traceId;
-    @Setter @Getter @Column(columnName = SERVICE_ID) @IDColumn private int serviceId;
-    @Setter @Getter @Column(columnName = SERVICE_INSTANCE_ID) @IDColumn private int serviceInstanceId;
-    @Setter @Getter @Column(columnName = ENDPOINT_NAME, matchQuery = true) @IDColumn private String endpointName;
-    @Setter @Getter @Column(columnName = ENDPOINT_ID) @IDColumn private int endpointId;
-    @Setter @Getter @Column(columnName = START_TIME) @IDColumn private long startTime;
-    @Setter @Getter @Column(columnName = END_TIME) @IDColumn private long endTime;
-    @Setter @Getter @Column(columnName = LATENCY) @IDColumn private int latency;
-    @Setter @Getter @Column(columnName = IS_ERROR) @IDColumn private int isError;
-    @Setter @Getter @Column(columnName = DATA_BINARY) @IDColumn private byte[] dataBinary;
-    @Setter @Getter @Column(columnName = VERSION) @IDColumn private int version;
+    @Setter
+    @Getter
+    @Column(columnName = SEGMENT_ID)
+    private String segmentId;
+    @Setter
+    @Getter
+    @Column(columnName = TRACE_ID)
+    private String traceId;
+    @Setter
+    @Getter
+    @Column(columnName = SERVICE_ID)
+    private int serviceId;
+    @Setter
+    @Getter
+    @Column(columnName = SERVICE_INSTANCE_ID)
+    private int serviceInstanceId;
+    @Setter
+    @Getter
+    @Column(columnName = ENDPOINT_NAME, matchQuery = true)
+    private String endpointName;
+    @Setter
+    @Getter
+    @Column(columnName = ENDPOINT_ID)
+    private int endpointId;
+    @Setter
+    @Getter
+    @Column(columnName = START_TIME)
+    private long startTime;
+    @Setter
+    @Getter
+    @Column(columnName = END_TIME)
+    private long endTime;
+    @Setter
+    @Getter
+    @Column(columnName = LATENCY)
+    private int latency;
+    @Setter
+    @Getter
+    @Column(columnName = IS_ERROR)
+    private int isError;
+    @Setter
+    @Getter
+    @Column(columnName = DATA_BINARY)
+    private byte[] dataBinary;
+    @Setter
+    @Getter
+    @Column(columnName = VERSION)
+    private int version;
 
-    @Override public String id() {
+    @Override
+    public String id() {
         return segmentId;
     }
 
     public static class Builder implements StorageBuilder<SegmentRecord> {
 
-        @Override public Map<String, Object> data2Map(SegmentRecord storageData) {
+        @Override
+        public Map<String, Object> data2Map(SegmentRecord storageData) {
             Map<String, Object> map = new HashMap<>();
             map.put(SEGMENT_ID, storageData.getSegmentId());
             map.put(TRACE_ID, storageData.getTraceId());
@@ -91,25 +129,26 @@ public class SegmentRecord extends Record {
             return map;
         }
 
-        @Override public SegmentRecord map2Data(Map<String, Object> dbMap) {
+        @Override
+        public SegmentRecord map2Data(Map<String, Object> dbMap) {
             SegmentRecord record = new SegmentRecord();
-            record.setSegmentId((String)dbMap.get(SEGMENT_ID));
-            record.setTraceId((String)dbMap.get(TRACE_ID));
-            record.setServiceId(((Number)dbMap.get(SERVICE_ID)).intValue());
-            record.setServiceInstanceId(((Number)dbMap.get(SERVICE_INSTANCE_ID)).intValue());
-            record.setEndpointName((String)dbMap.get(ENDPOINT_NAME));
-            record.setEndpointId(((Number)dbMap.get(ENDPOINT_ID)).intValue());
-            record.setStartTime(((Number)dbMap.get(START_TIME)).longValue());
-            record.setEndTime(((Number)dbMap.get(END_TIME)).longValue());
-            record.setLatency(((Number)dbMap.get(LATENCY)).intValue());
-            record.setIsError(((Number)dbMap.get(IS_ERROR)).intValue());
-            record.setTimeBucket(((Number)dbMap.get(TIME_BUCKET)).longValue());
-            if (StringUtil.isEmpty((String)dbMap.get(DATA_BINARY))) {
+            record.setSegmentId((String) dbMap.get(SEGMENT_ID));
+            record.setTraceId((String) dbMap.get(TRACE_ID));
+            record.setServiceId(((Number) dbMap.get(SERVICE_ID)).intValue());
+            record.setServiceInstanceId(((Number) dbMap.get(SERVICE_INSTANCE_ID)).intValue());
+            record.setEndpointName((String) dbMap.get(ENDPOINT_NAME));
+            record.setEndpointId(((Number) dbMap.get(ENDPOINT_ID)).intValue());
+            record.setStartTime(((Number) dbMap.get(START_TIME)).longValue());
+            record.setEndTime(((Number) dbMap.get(END_TIME)).longValue());
+            record.setLatency(((Number) dbMap.get(LATENCY)).intValue());
+            record.setIsError(((Number) dbMap.get(IS_ERROR)).intValue());
+            record.setTimeBucket(((Number) dbMap.get(TIME_BUCKET)).longValue());
+            if (StringUtil.isEmpty((String) dbMap.get(DATA_BINARY))) {
                 record.setDataBinary(new byte[] {});
             } else {
-                record.setDataBinary(Base64.getDecoder().decode((String)dbMap.get(DATA_BINARY)));
+                record.setDataBinary(Base64.getDecoder().decode((String) dbMap.get(DATA_BINARY)));
             }
-            record.setVersion(((Number)dbMap.get(VERSION)).intValue());
+            record.setVersion(((Number) dbMap.get(VERSION)).intValue());
             return record;
         }
     }

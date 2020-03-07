@@ -16,7 +16,6 @@
  *
  */
 
-
 package org.apache.skywalking.apm.agent.core.plugin;
 
 import java.io.IOException;
@@ -29,10 +28,7 @@ import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
 
 /**
- * Use the current classloader to read all plugin define file.
- * The file must be named 'skywalking-plugin.def'
- *
- * @author wusheng
+ * Use the current classloader to read all plugin define file. The file must be named 'skywalking-plugin.def'
  */
 public class PluginResourcesResolver {
     private static final ILog logger = LogManager.getLogger(PluginResourcesResolver.class);
@@ -55,26 +51,4 @@ public class PluginResourcesResolver {
         }
         return null;
     }
-
-    /**
-     * Get the classloader.
-     * First getDefault current thread's classloader,
-     * if fail, getDefault {@link PluginResourcesResolver}'s classloader.
-     *
-     * @return the classloader to find plugin definitions.
-     */
-    private ClassLoader getDefaultClassLoader() {
-        ClassLoader cl = null;
-        try {
-            cl = Thread.currentThread().getContextClassLoader();
-        } catch (Throwable ex) {
-            // Cannot access thread context ClassLoader - falling back to system class loader...
-        }
-        if (cl == null) {
-            // No thread context class loader -> use class loader of this class.
-            cl = PluginResourcesResolver.class.getClassLoader();
-        }
-        return cl;
-    }
-
 }

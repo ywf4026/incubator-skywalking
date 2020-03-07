@@ -31,9 +31,6 @@ import org.junit.Test;
 import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.yaml.snakeyaml.Yaml;
 
-/**
- * @author jian.tan
- */
 public class PropertyPlaceholderHelperTest {
     private PropertyPlaceholderHelper placeholderHelper;
     private Properties properties = new Properties();
@@ -68,16 +65,26 @@ public class PropertyPlaceholderHelperTest {
     @Test
     public void testDataType() {
         //tests that do not use ${name} to set config.
-        Assert.assertEquals("grpc.skywalking.incubator.apache.org",
-            yaml.load(placeholderHelper.replacePlaceholders(properties.getProperty("gRPCHost"), properties)));
+        Assert.assertEquals("grpc.skywalking.apache.org", yaml.load(placeholderHelper.replacePlaceholders(properties.getProperty("gRPCHost"), properties)));
 
         //tests that use ${REST_HOST:0.0.0.0} but not set REST_HOST in environmentVariables.
-        Assert.assertEquals("0.0.0.0",
-            yaml.load(placeholderHelper.replacePlaceholders(properties.getProperty("restHost"), properties)));
+        Assert.assertEquals("0.0.0.0", yaml.load(placeholderHelper.replacePlaceholders(properties.getProperty("restHost"), properties)));
 
         //tests that use ${REST_PORT:12800} and set REST_PORT in environmentVariables.
-        Assert.assertEquals(12801,
-            yaml.load(placeholderHelper.replacePlaceholders(properties.getProperty("restPort"), properties)));
+        Assert.assertEquals(12801, yaml.load(placeholderHelper.replacePlaceholders(properties.getProperty("restPort"), properties)));
+    }
+
+    @Test
+    public void testReplacePlaceholders() {
+        PropertyPlaceholderHelper propertyPlaceholderHelper = PropertyPlaceholderHelper.INSTANCE;
+        Properties properties = new Properties();
+        String resultString = propertyPlaceholderHelper.replacePlaceholders("&${[}7", properties);
+
+        Assert.assertEquals(0, properties.size());
+        Assert.assertTrue(properties.isEmpty());
+
+        Assert.assertNotNull(resultString);
+        Assert.assertEquals("&${[}7", resultString);
     }
 
     @After

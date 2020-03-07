@@ -28,6 +28,7 @@ import org.apache.skywalking.apm.agent.core.boot.BootService;
 import org.apache.skywalking.apm.agent.core.boot.DefaultImplementor;
 import org.apache.skywalking.apm.agent.core.boot.DefaultNamedThreadFactory;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
+import org.apache.skywalking.apm.agent.core.commands.CommandService;
 import org.apache.skywalking.apm.agent.core.conf.Config;
 import org.apache.skywalking.apm.agent.core.conf.RemoteDownstreamConfig;
 import org.apache.skywalking.apm.agent.core.dictionary.DictionaryUtil;
@@ -40,16 +41,17 @@ import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.remote.GRPCChannelListener;
 import org.apache.skywalking.apm.agent.core.remote.GRPCChannelManager;
 import org.apache.skywalking.apm.agent.core.remote.GRPCChannelStatus;
+import org.apache.skywalking.apm.network.common.Commands;
 import org.apache.skywalking.apm.network.language.agent.JVMMetric;
 import org.apache.skywalking.apm.network.language.agent.v2.JVMMetricCollection;
 import org.apache.skywalking.apm.network.language.agent.v2.JVMMetricReportServiceGrpc;
 import org.apache.skywalking.apm.util.RunnableWithExceptionProtection;
 
+import static org.apache.skywalking.apm.agent.core.conf.Config.Collector.GRPC_UPSTREAM_TIMEOUT;
+
 /**
  * The <code>JVMService</code> represents a timer, which collectors JVM cpu, memory, memorypool and gc info, and send
  * the collected info to Collector through the channel provided by {@link GRPCChannelManager}
- *
- * @author wusheng
  */
 @DefaultImplementor
 public class JVMService implements BootService, Runnable {
@@ -61,28 +63,27 @@ public class JVMService implements BootService, Runnable {
 
     @Override
     public void prepare() throws Throwable {
-        queue = new LinkedBlockingQueue(Config.Jvm.BUFFER_SIZE);
+        queue = new LinkedBlockingQueue<JVMMetric>(Config.Jvm.BUFFER_SIZE);
         sender = new Sender();
         ServiceManager.INSTANCE.findService(GRPCChannelManager.class).addChannelListener(sender);
     }
 
     @Override
     public void boot() throws Throwable {
-        collectMetricFuture = Executors
-            .newSingleThreadScheduledExecutor(new DefaultNamedThreadFactory("JVMService-produce"))
-            .scheduleAtFixedRate(new RunnableWithExceptionProtection(this, new RunnableWithExceptionProtection.CallbackWhenException() {
-                @Override public void handle(Throwable t) {
-                    logger.error("JVMService produces metrics failure.", t);
-                }
-            }), 0, 1, TimeUnit.SECONDS);
-        sendMetricFuture = Executors
-            .newSingleThreadScheduledExecutor(new DefaultNamedThreadFactory("JVMService-consume"))
-            .scheduleAtFixedRate(new RunnableWithExceptionProtection(sender, new RunnableWithExceptionProtection.CallbackWhenException() {
-                @Override public void handle(Throwable t) {
-                    logger.error("JVMService consumes and upload failure.", t);
-                }
-            }
-            ), 0, 1, TimeUnit.SECONDS);
+        collectMetricFuture = Executors.newSingleThreadScheduledExecutor(new DefaultNamedThreadFactory("JVMService-produce"))
+                                       .scheduleAtFixedRate(new RunnableWithExceptionProtection(this, new RunnableWithExceptionProtection.CallbackWhenException() {
+                                           @Override
+                                           public void handle(Throwable t) {
+                                               logger.error("JVMService produces metrics failure.", t);
+                                           }
+                                       }), 0, 1, TimeUnit.SECONDS);
+        sendMetricFuture = Executors.newSingleThreadScheduledExecutor(new DefaultNamedThreadFactory("JVMService-consume"))
+                                    .scheduleAtFixedRate(new RunnableWithExceptionProtection(sender, new RunnableWithExceptionProtection.CallbackWhenException() {
+                                        @Override
+                                        public void handle(Throwable t) {
+                                            logger.error("JVMService consumes and upload failure.", t);
+                                        }
+                                    }), 0, 1, TimeUnit.SECONDS);
     }
 
     @Override
@@ -98,16 +99,15 @@ public class JVMService implements BootService, Runnable {
 
     @Override
     public void run() {
-        if (RemoteDownstreamConfig.Agent.SERVICE_ID != DictionaryUtil.nullValue()
-            && RemoteDownstreamConfig.Agent.SERVICE_INSTANCE_ID != DictionaryUtil.nullValue()
-        ) {
+        if (RemoteDownstreamConfig.Agent.SERVICE_ID != DictionaryUtil.nullValue() && RemoteDownstreamConfig.Agent.SERVICE_INSTANCE_ID != DictionaryUtil
+            .nullValue()) {
             long currentTimeMillis = System.currentTimeMillis();
             try {
                 JVMMetric.Builder jvmBuilder = JVMMetric.newBuilder();
                 jvmBuilder.setTime(currentTimeMillis);
                 jvmBuilder.setCpu(CPUProvider.INSTANCE.getCpuMetric());
                 jvmBuilder.addAllMemory(MemoryProvider.INSTANCE.getMemoryMetricList());
-                jvmBuilder.addAllMemoryPool(MemoryPoolProvider.INSTANCE.getMemoryPoolMetricList());
+                jvmBuilder.addAllMemoryPool(MemoryPoolProvider.INSTANCE.getMemoryPoolMetricsList());
                 jvmBuilder.addAllGc(GCProvider.INSTANCE.getGCList());
 
                 JVMMetric jvmMetric = jvmBuilder.build();
@@ -127,9 +127,8 @@ public class JVMService implements BootService, Runnable {
 
         @Override
         public void run() {
-            if (RemoteDownstreamConfig.Agent.SERVICE_ID != DictionaryUtil.nullValue()
-                && RemoteDownstreamConfig.Agent.SERVICE_INSTANCE_ID != DictionaryUtil.nullValue()
-            ) {
+            if (RemoteDownstreamConfig.Agent.SERVICE_ID != DictionaryUtil.nullValue() && RemoteDownstreamConfig.Agent.SERVICE_INSTANCE_ID != DictionaryUtil
+                .nullValue()) {
                 if (status == GRPCChannelStatus.CONNECTED) {
                     try {
                         JVMMetricCollection.Builder builder = JVMMetricCollection.newBuilder();
@@ -138,7 +137,9 @@ public class JVMService implements BootService, Runnable {
                         if (buffer.size() > 0) {
                             builder.addAllMetrics(buffer);
                             builder.setServiceInstanceId(RemoteDownstreamConfig.Agent.SERVICE_INSTANCE_ID);
-                            stub.collect(builder.build());
+                            Commands commands = stub.withDeadlineAfter(GRPC_UPSTREAM_TIMEOUT, TimeUnit.SECONDS)
+                                                    .collect(builder.build());
+                            ServiceManager.INSTANCE.findService(CommandService.class).receiveCommand(commands);
                         }
                     } catch (Throwable t) {
                         logger.error(t, "send JVM metrics to Collector fail.");

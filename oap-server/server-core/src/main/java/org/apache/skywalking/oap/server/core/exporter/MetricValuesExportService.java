@@ -18,14 +18,17 @@
 
 package org.apache.skywalking.oap.server.core.exporter;
 
-import org.apache.skywalking.oap.server.core.analysis.indicator.*;
 import org.apache.skywalking.oap.server.library.module.Service;
 
 /**
- * Export the metric value from indicators through this service, if provider exists.
- *
- * @author wusheng
+ * Export the metrics value from metrics through this service, if provider exists.
  */
 public interface MetricValuesExportService extends Service {
-    void export(IndicatorMetaInfo meta, Indicator indicator);
+    /**
+     * This method is sync-mode export, the performance effects the persistence result. Queue mode is highly
+     * recommended.
+     *
+     * @param event value is only accurate when the method invokes. Don't cache it.
+     */
+    void export(ExportEvent event);
 }

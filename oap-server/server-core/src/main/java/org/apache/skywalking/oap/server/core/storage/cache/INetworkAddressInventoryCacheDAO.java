@@ -18,15 +18,15 @@
 
 package org.apache.skywalking.oap.server.core.storage.cache;
 
+import java.util.List;
 import org.apache.skywalking.oap.server.core.register.NetworkAddressInventory;
 import org.apache.skywalking.oap.server.core.storage.DAO;
 
-/**
- * @author peng-yongsheng
- */
 public interface INetworkAddressInventoryCacheDAO extends DAO {
 
     int getAddressId(String networkAddress);
 
     NetworkAddressInventory get(int addressId);
+
+    List<NetworkAddressInventory> loadLastUpdate(long lastUpdateTime);
 }

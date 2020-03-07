@@ -24,36 +24,40 @@ import org.apache.skywalking.apm.network.language.agent.UpstreamSegment;
 import org.apache.skywalking.apm.network.language.agent.v2.TraceSegmentReportServiceGrpc;
 import org.apache.skywalking.oap.server.library.module.ModuleManager;
 import org.apache.skywalking.oap.server.library.server.grpc.GRPCHandler;
-import org.apache.skywalking.oap.server.receiver.trace.provider.handler.v5.grpc.TraceSegmentServiceHandler;
 import org.apache.skywalking.oap.server.receiver.trace.provider.parser.SegmentParseV2;
 import org.apache.skywalking.oap.server.receiver.trace.provider.parser.SegmentSource;
 import org.apache.skywalking.oap.server.telemetry.TelemetryModule;
-import org.apache.skywalking.oap.server.telemetry.api.*;
+import org.apache.skywalking.oap.server.telemetry.api.HistogramMetrics;
+import org.apache.skywalking.oap.server.telemetry.api.MetricsCreator;
+import org.apache.skywalking.oap.server.telemetry.api.MetricsTag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TraceSegmentReportServiceHandler extends TraceSegmentReportServiceGrpc.TraceSegmentReportServiceImplBase implements GRPCHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(TraceSegmentServiceHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(TraceSegmentReportServiceHandler.class);
 
     private final SegmentParseV2.Producer segmentProducer;
-    private HistogramMetric histogram;
+    private HistogramMetrics histogram;
 
     public TraceSegmentReportServiceHandler(SegmentParseV2.Producer segmentProducer, ModuleManager moduleManager) {
         this.segmentProducer = segmentProducer;
-        MetricCreator metricCreator = moduleManager.find(TelemetryModule.NAME).provider().getService(MetricCreator.class);
-        histogram = metricCreator.createHistogramMetric("trace_grpc_v6_in_latency", "The process latency of service mesh telemetry",
-            MetricTag.EMPTY_KEY, MetricTag.EMPTY_VALUE);
+        MetricsCreator metricsCreator = moduleManager.find(TelemetryModule.NAME)
+                                                     .provider()
+                                                     .getService(MetricsCreator.class);
+        histogram = metricsCreator.createHistogramMetric("trace_grpc_v6_in_latency", "The process latency of service mesh telemetry", MetricsTag.EMPTY_KEY, MetricsTag.EMPTY_VALUE);
     }
 
-    @Override public StreamObserver<UpstreamSegment> collect(StreamObserver<Commands> responseObserver) {
+    @Override
+    public StreamObserver<UpstreamSegment> collect(StreamObserver<Commands> responseObserver) {
         return new StreamObserver<UpstreamSegment>() {
-            @Override public void onNext(UpstreamSegment segment) {
+            @Override
+            public void onNext(UpstreamSegment segment) {
                 if (logger.isDebugEnabled()) {
                     logger.debug("receive segment");
                 }
 
-                HistogramMetric.Timer timer = histogram.createTimer();
+                HistogramMetrics.Timer timer = histogram.createTimer();
                 try {
                     segmentProducer.send(segment, SegmentSource.Agent);
                 } finally {
@@ -61,12 +65,14 @@ public class TraceSegmentReportServiceHandler extends TraceSegmentReportServiceG
                 }
             }
 
-            @Override public void onError(Throwable throwable) {
+            @Override
+            public void onError(Throwable throwable) {
                 logger.error(throwable.getMessage(), throwable);
                 responseObserver.onCompleted();
             }
 
-            @Override public void onCompleted() {
+            @Override
+            public void onCompleted() {
                 responseObserver.onNext(Commands.newBuilder().build());
                 responseObserver.onCompleted();
             }

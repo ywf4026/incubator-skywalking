@@ -19,14 +19,15 @@
 package org.apache.skywalking.oap.server.telemetry.api;
 
 /**
- * The telemetry context which the metric instances may need to know.
- * @author wusheng
+ * The telemetry context which the metrics instances may need to know.
  */
 public enum TelemetryRelatedContext {
     INSTANCE;
 
     private volatile String id = null;
-    TelemetryRelatedContext(){}
+
+    TelemetryRelatedContext() {
+    }
 
     /**
      * Set a global ID to represent the current oap instance

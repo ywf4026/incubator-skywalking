@@ -18,20 +18,28 @@
 
 package org.apache.skywalking.oap.server.receiver.jvm.provider.handler;
 
-import java.util.*;
+import java.util.List;
+import java.util.Objects;
 import org.apache.skywalking.apm.network.common.CPU;
-import org.apache.skywalking.apm.network.language.agent.*;
-import org.apache.skywalking.oap.server.core.*;
+import org.apache.skywalking.apm.network.language.agent.GC;
+import org.apache.skywalking.apm.network.language.agent.JVMMetric;
+import org.apache.skywalking.apm.network.language.agent.Memory;
+import org.apache.skywalking.apm.network.language.agent.MemoryPool;
+import org.apache.skywalking.oap.server.core.Const;
+import org.apache.skywalking.oap.server.core.CoreModule;
 import org.apache.skywalking.oap.server.core.cache.ServiceInstanceInventoryCache;
 import org.apache.skywalking.oap.server.core.register.ServiceInstanceInventory;
 import org.apache.skywalking.oap.server.core.source.GCPhrase;
-import org.apache.skywalking.oap.server.core.source.*;
+import org.apache.skywalking.oap.server.core.source.MemoryPoolType;
+import org.apache.skywalking.oap.server.core.source.ServiceInstanceJVMCPU;
+import org.apache.skywalking.oap.server.core.source.ServiceInstanceJVMGC;
+import org.apache.skywalking.oap.server.core.source.ServiceInstanceJVMMemory;
+import org.apache.skywalking.oap.server.core.source.ServiceInstanceJVMMemoryPool;
+import org.apache.skywalking.oap.server.core.source.SourceReceiver;
 import org.apache.skywalking.oap.server.library.module.ModuleManager;
-import org.slf4j.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * @author wusheng
- */
 public class JVMSourceDispatcher {
     private static final Logger logger = LoggerFactory.getLogger(JVMSourceDispatcher.class);
     private final SourceReceiver sourceReceiver;
@@ -39,23 +47,25 @@ public class JVMSourceDispatcher {
 
     public JVMSourceDispatcher(ModuleManager moduleManager) {
         this.sourceReceiver = moduleManager.find(CoreModule.NAME).provider().getService(SourceReceiver.class);
-        instanceInventoryCache = moduleManager.find(CoreModule.NAME).provider().getService(ServiceInstanceInventoryCache.class);
+        this.instanceInventoryCache = moduleManager.find(CoreModule.NAME)
+                                                   .provider()
+                                                   .getService(ServiceInstanceInventoryCache.class);
     }
 
-    void sendMetric(int serviceInstanceId, long minuteTimeBucket, JVMMetric metric) {
+    void sendMetric(int serviceInstanceId, long minuteTimeBucket, JVMMetric metrics) {
         ServiceInstanceInventory serviceInstanceInventory = instanceInventoryCache.get(serviceInstanceId);
         int serviceId;
         if (Objects.nonNull(serviceInstanceInventory)) {
             serviceId = serviceInstanceInventory.getServiceId();
         } else {
-            logger.warn("Can't found service by service instance id from cache, service instance id is: {}", serviceInstanceId);
+            logger.warn("Can't find service by service instance id from cache, service instance id is: {}", serviceInstanceId);
             return;
         }
 
-        this.sendToCpuMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metric.getCpu());
-        this.sendToMemoryMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metric.getMemoryList());
-        this.sendToMemoryPoolMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metric.getMemoryPoolList());
-        this.sendToGCMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metric.getGcList());
+        this.sendToCpuMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metrics.getCpu());
+        this.sendToMemoryMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metrics.getMemoryList());
+        this.sendToMemoryPoolMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metrics.getMemoryPoolList());
+        this.sendToGCMetricProcess(serviceId, serviceInstanceId, minuteTimeBucket, metrics.getGcList());
     }
 
     private void sendToCpuMetricProcess(int serviceId, int serviceInstanceId, long timeBucket, CPU cpu) {

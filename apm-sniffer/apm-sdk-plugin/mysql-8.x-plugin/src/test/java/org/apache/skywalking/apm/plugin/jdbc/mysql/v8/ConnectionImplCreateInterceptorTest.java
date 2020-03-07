@@ -28,19 +28,13 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.mockito.Mockito.verify;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 
-/**
- *
- * @author: dingshaocheng
- */
 @RunWith(MockitoJUnitRunner.class)
 public class ConnectionImplCreateInterceptorTest {
     private ConnectionCreateInterceptor interceptor;
 
     @Mock
     private EnhancedInstance objectInstance;
-
 
     @Before
     public void setUp() {
@@ -51,7 +45,7 @@ public class ConnectionImplCreateInterceptorTest {
     public void testResultIsEnhanceInstance() throws Throwable {
         final ConnectionUrlParser connectionUrlParser = ConnectionUrlParser.parseConnectionString("jdbc:mysql:replication://localhost:3360,localhost:3360,localhost:3360/test?useUnicode=true&characterEncoding=utf8&useSSL=false&roundRobinLoadBalance=true");
 
-        interceptor.afterMethod(null,null,connectionUrlParser.getHosts().toArray(),null,objectInstance);
-        verify(objectInstance,times(1)).setSkyWalkingDynamicField(Matchers.any());
+        interceptor.afterMethod(null, null, connectionUrlParser.getHosts().toArray(), null, objectInstance);
+        verify(objectInstance).setSkyWalkingDynamicField(Matchers.any());
     }
 }

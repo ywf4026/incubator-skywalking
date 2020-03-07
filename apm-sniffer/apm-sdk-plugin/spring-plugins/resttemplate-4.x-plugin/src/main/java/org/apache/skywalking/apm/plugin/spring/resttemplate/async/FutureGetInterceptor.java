@@ -16,11 +16,9 @@
  *
  */
 
-
 package org.apache.skywalking.apm.plugin.spring.resttemplate.async;
 
 import java.lang.reflect.Method;
-import java.net.URI;
 import org.apache.skywalking.apm.agent.core.context.ContextManager;
 import org.apache.skywalking.apm.agent.core.context.trace.AbstractSpan;
 import org.apache.skywalking.apm.agent.core.plugin.interceptor.enhance.EnhancedInstance;
@@ -32,8 +30,8 @@ public class FutureGetInterceptor implements InstanceMethodsAroundInterceptor {
     @Override
     public void beforeMethod(EnhancedInstance objInst, Method method, Object[] allArguments, Class<?>[] argumentsTypes,
         MethodInterceptResult result) throws Throwable {
-        Object[] cacheValues = (Object[])objInst.getSkyWalkingDynamicField();
-        ContextManager.createLocalSpan("future/get:" + ((URI)cacheValues[0]).getPath());
+        Object[] cacheValues = (Object[]) objInst.getSkyWalkingDynamicField();
+        ContextManager.createLocalSpan("future/get:" + cacheValues[0]);
     }
 
     @Override
@@ -43,7 +41,8 @@ public class FutureGetInterceptor implements InstanceMethodsAroundInterceptor {
         return ret;
     }
 
-    @Override public void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments,
+    @Override
+    public void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments,
         Class<?>[] argumentsTypes, Throwable t) {
         AbstractSpan activeSpan = ContextManager.activeSpan();
         activeSpan.errorOccurred().log(t);

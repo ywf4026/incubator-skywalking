@@ -1,15 +1,18 @@
 # SkyWalking Cross Process Propagation Headers Protocol
 * Version 2.0
 
+SkyWalking is more likely an APM system, rather than common distributed tracing system. 
+The Headers is much more complex than them in order to improving analysis performance of collector. 
+You can find many similar mechanism in other commercial APM system. (Some are even much more complex than our's)
+
 ## Abstract
-SkyWalking Cross Process Propagation Headers Protocol v2 is also named as sw6 protocol. This protocol keeps the same purposes 
-of [v1(a.k.a. sw3)](Skywalking-Cross-Process-Propagation-Headers-Protocol-v1.md), which is keep context propagation works.
+SkyWalking Cross Process Propagation Headers Protocol v2 is also named as sw6 protocol, which is for context propagation.
 
 ## Differences from v1 
 The major differences of v2 and v1, comes from SkyWalking's evolution, including
 1. Mesh and languages are not same always, some info in headers should be optional.
 1. BASE64 encoding required.
-1. Sampling flag is including.
+1. Sampling flag is included.
 
 ## Header Item
 * Header Name: `sw6`
@@ -38,6 +41,8 @@ _This value can use exchange/compress collector service to get the id(integer) t
 1. Parent endpoint of the parent service. **String(BASE64 encoded)**. 
 _This value can use exchange/compress collector service to get the id(integer) to represent the string. If you use the string, it must start with `#`, others use integer directly._
 
+endpoint id = -1 and parent endpoint name is empty mean there is no real parent endpoint. Since 6.6.0
+
 ## Sample values
 1. Short version, `1-TRACEID-SEGMENTID-3-5-2-IPPORT`
-1. Complete version, `1-TRACEID-SEGMENTID-3-5-2-IPPORT-PARENTURI-ENTRYURI`
+1. Complete version, `1-TRACEID-SEGMENTID-3-5-2-IPPORT-ENTRYURI-PARENTURI`

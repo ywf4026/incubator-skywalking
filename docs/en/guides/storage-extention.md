@@ -16,18 +16,23 @@ public Class<? extends ModuleDefine> module() {
 Here is the list of all DAO interfaces in storage
 1. IServiceInventoryCacheDAO
 1. IServiceInstanceInventoryCacheDAO
-1. H2EndpointInventoryCacheDAO
-1. H2NetworkAddressInventoryCacheDAO
+1. IEndpointInventoryCacheDAO
+1. INetworkAddressInventoryCacheDAO
 1. IBatchDAO
 1. StorageDAO
 1. IRegisterLockDAO
-1. H2TopologyQueryDAO
-1. IMetricQueryDAO
+1. ITopologyQueryDAO
+1. IMetricsQueryDAO
 1. ITraceQueryDAO
 1. IMetadataQueryDAO
 1. IAggregationQueryDAO
 1. IAlarmQueryDAO
 1. IHistoryDeleteDAO
+1. IMetricsDAO
+1. IRecordDAO
+1. IRegisterDAO
+1. ILogQueryDAO
+1. ITopNRecordsQueryDAO
 
 ## Register all service implementations
 In `public void prepare()`, use `this#registerServiceImplementation` method to do register binding your implementation with the above interfaces.
@@ -38,4 +43,4 @@ or `org.apache.skywalking.oap.server.storage.plugin.jdbc.mysql.MySQLStorageProvi
 
 ## Redistribution with new storage implementation.
 You don't have to clone the main repo just for implementing the storage. You could just easy depend our Apache releases.
-Take a look at [SkyAPM/SkyWalking-With-Es5x-Storage](https://github.com/SkyAPM/SkyWalking-With-Es5x-Storage) repo, SkyWalking v6 redistribution with ElasticSearch 5 TCP connection storage implemention.
+Take a look at [SkyAPM/SkyWalking-With-Es5x-Storage](https://github.com/SkyAPM/SkyWalking-With-Es5x-Storage) repo, SkyWalking v6 redistribution with ElasticSearch 5 TCP connection storage implementation.
